@@ -23,15 +23,12 @@ class LikerBot:
         self.user = pwb.User(self.wiki, wiki_user)
         if self.user.isRegistered() == False:
             raise UserNotRegistered("User not found.")
-        if self.is_blocked_user() == True:
+        if self.user.isBlocked() == True:
             raise UserHasBlocked("User has been blocked.")
-
-    def is_blocked_user(self):
-        return self.user.isBlocked()
 
     def _count_contributions(self, counter=400):
         if self.user.editCount(counter) < 1:
-            raise UserHasZeroContributions("User has User has less than 1 revision.")
+            raise UserHasZeroContributions("User has less than 1 revision.")
         return self.user.editCount(counter)
 
     def _get_contributions(self):
