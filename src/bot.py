@@ -39,7 +39,7 @@ class Bot:
             )
 
             embed.set_author(
-                name="WikipediaDiscordBot", url="https://wikipedia.org", 
+                name="WikimediaRoleManager", url="https://github.com/OlegCinema/WikimediaRoleManager", 
                 icon_url="https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png"
             )
             embed.add_field(name="Краткая информация", value=
