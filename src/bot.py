@@ -78,6 +78,13 @@ class Bot:
             self.confing.re_write(json.dumps(data, indent=4))
 
 
+        @self.bot.event
+        async def on_member_update(before, after):
+            if before.name in self.list_of_users_logging[str(before.guild.id)]["list_verific"]:
+                if after.top_role != before.top_role:
+                    del self.list_of_users_logging[str(before.guild.id)]["list_verific"][after.name]
+
+
         async def is_moderator(ctx):
             data = self.read_config()
             if ctx.author.top_role.id == int(data[str(ctx.guild.id)]["moderators_role"]):
@@ -231,41 +238,42 @@ class MainBot(Bot):
 
     async def _get_nickname(self, member):
         msg = (await self.bot.wait_for('message', check=lambda msg: member == msg.author and member.guild.id == msg.guild.id)).content
-        print(msg)
         if msg == "нет":
             await self._send_stop_check(member)
             return
+        if msg and msg != "нет":
+            self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]["wiki_user"] = msg
 
-        try:
-            like = self._get_like(user=msg, lang="ru")
-            self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]["diff"] = {
-                "id": like[0],
-                "name": like[1]
-            }
-            print(like)
-            await self._check_user(member)
-            
-        except UserHasZeroContributions:
-            await self.list_of_users_logging[str(member.guild.id)]["login_channel"].send(
-            f"{member.mention}: к сожалению, " +
-            "автоматическая верификация невозможна: у вас менее 1 правки."
-            )
-            del self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]
+            try:
+                like = self._get_like(user=msg, lang="ru")
+                self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]["diff"] = {
+                    "id": like[0],
+                    "name": like[1]
+                }
+                print(like)
+                await self._check_user(member)
+                
+            except UserHasZeroContributions:
+                await self.list_of_users_logging[str(member.guild.id)]["login_channel"].send(
+                f"{member.mention}: к сожалению, " +
+                "автоматическая верификация невозможна: у вас менее 1 правки."
+                )
+                del self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]
 
-        except UserNotRegistered:
-            await self.list_of_users_logging[str(member.guild.id)]["login_channel"].send(
-            f"{member.mention}: к сожалению, " +
-            "автоматическая верификация невозможна: " +
-            "вы не зарегистрированы в Википедии."
-            )
-            del self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]
+            except UserNotRegistered:
+                await self.list_of_users_logging[str(member.guild.id)]["login_channel"].send(
+                f"{member.mention}: к сожалению, " +
+                "автоматическая верификация невозможна: " +
+                "вы не зарегистрированы в Википедии."
+                )
+                del self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]
 
-        except UserHasBlocked:
-            await self.list_of_users_logging[str(member.guild.id)]["login_channel"].send(
-                f"Пользователь {member.mention} был кикнут, так как его аккаунт заблокирован."
-            )
-            await member.kick()
-            del self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]
+            except UserHasBlocked:
+                await self.list_of_users_logging[str(member.guild.id)]["login_channel"].send(
+                    f"Пользователь {member.mention} был кикнут, так как его аккаунт заблокирован."
+                )
+                await member.kick()
+                del self.list_of_users_logging[str(member.guild.id)]["list_verific"][member.name]
 
     def _events(self):
         @self.bot.event
@@ -313,7 +321,7 @@ class MainBot(Bot):
             self.list_of_users_logging[str(member.guild.id)] = {
                 "list_verific": {
                     member.name: {
-                    "member": str(member),
+                    "wiki_user": None,
                     "diff": None
                     }
                 },
@@ -322,6 +330,7 @@ class MainBot(Bot):
 
             await asyncio.sleep(0.5)
             await self._send_hello_msg(member)
+            await asyncio.sleep(0.1)
             await self._get_nickname(member)
 
         @self.bot.event
